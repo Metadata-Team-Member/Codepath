@@ -178,7 +178,7 @@ export const DOMAINS: Domain[] = [
     selectAs: "state_or_territory",
     alias: "stt",
     caution:
-      "This name has a stray space: STATE_ OR_TERRITORY_CODE. The mapping file drops the space. The numbers stay the same.",
+      "The export has an accidental space in this name (STATE_ OR_TERRITORY_CODE). Engineering tidies it in the mapping file. The numbers stay the same.",
   },
 ];
 

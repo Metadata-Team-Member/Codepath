@@ -86,7 +86,42 @@
   animation: row-arrive 1.6s ease both;
 }
 
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Words reveal: slides in from the left while fading up, ~350ms. */
+.slide-right {
+  animation: slide-right 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.slide-right-late {
+  animation-delay: 140ms;
+}
+
+.row-slide {
+  animation: row-fade 260ms ease-out both;
+}
+
+@keyframes row-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .slide-right,
+  .row-slide,
   .stage-in,
   .wipe-in,
   .row-arrive {

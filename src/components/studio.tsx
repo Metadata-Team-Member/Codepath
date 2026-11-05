@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import {
   DOMAINS,
   FILE_NAME,
@@ -16,7 +16,7 @@ import {
 const STEPS = [
   { id: "export", title: "File", detail: "One file arrives" },
   { id: "split", title: "Split", detail: "One list per type" },
-  { id: "load", title: "Words", detail: "Words go into a lookup" },
+  { id: "load", title: "Words", detail: "Words go into a lookup table" },
   { id: "store", title: "Number", detail: "The record keeps the number" },
   { id: "read", title: "Lookup", detail: "The words come back" },
 ] as const;
@@ -218,6 +218,11 @@ export function Studio() {
           One file comes out. It is split into lists. The database keeps the number. The list
           supplies the words.
         </p>
+        <p className="mt-5 max-w-2xl border-l-4 border-l-copper bg-copper-soft px-4 py-3 text-base leading-relaxed">
+          You set up dates and permitted values in the metadata repository. The result is a code
+          list. This page follows that code list to data engineering, then shows how it links to
+          the data you see on your screens.
+        </p>
       </header>
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -356,8 +361,8 @@ export function Studio() {
       </div>
 
       <p className="mt-10 max-w-2xl font-mono text-xs leading-relaxed text-muted">
-        {ROWS.length} lines in one file, split into {DOMAINS.length} lists. The sample records are
-        not real people.
+        {ROWS.length} lines in one file, split into {DOMAINS.length} lists. The sample records
+        (Record 1042 and so on) are made-up examples, not real people.
       </p>
     </main>
   );
@@ -397,20 +402,38 @@ function Sheet({
   );
 }
 
-function SqlBlock({ children }: { children: string }) {
+function SqlBlock({
+  children,
+  className = "",
+  sqlRef,
+}: {
+  children: string;
+  className?: string;
+  sqlRef?: Ref<HTMLPreElement>;
+}) {
   return (
-    <pre className="overflow-x-auto bg-ink p-4 font-mono text-sm leading-relaxed text-paper">
-      {children}
-    </pre>
+    <>
+      <p className="mb-1 font-mono text-xs text-muted">
+        The code behind this step, for the curious. You do not need to read it.
+      </p>
+      <pre
+        ref={sqlRef}
+        className={
+          "overflow-auto bg-ink p-4 font-mono text-sm leading-relaxed text-paper " + className
+        }
+      >
+        {children}
+      </pre>
+    </>
   );
 }
 
 const COLUMN_JOBS = [
-  { term: "CODE_TYPE", def: "Which list this line belongs to." },
+  { term: "CODE_TYPE", def: "Which list this line belongs to, such as gender or employment." },
   { term: "CODE", def: "The number that gets saved." },
   { term: "DESCRIPTION", def: "The words for that number." },
-  { term: "FROM / TO", def: "When the words apply. 1600 and 9999 mean always." },
-  { term: "MODIFIED", def: "When the line was last edited. Not saved as a fact." },
+  { term: "FROM / TO", def: "The dates you set. 1600 and 9999 mean there is no start or end date: always." },
+  { term: "MODIFIED", def: "When the line was last edited. It is not carried into the database." },
 ];
 
 function ExportStage({ trace }: { trace: Row }) {
@@ -430,9 +453,9 @@ function ExportStage({ trace }: { trace: Row }) {
 
   return (
     <section>
-      <Point>One file. Every type of code is mixed in together.</Point>
+      <Point>This is your code list: one file with every type of code mixed in together.</Point>
       <p className="mt-4 overflow-x-auto font-mono text-sm text-ink-soft">{csvLine(trace)}</p>
-      <p className="mt-1 mb-4 font-mono text-xs text-muted">The line we are following.</p>
+      <p className="mt-1 mb-4 font-mono text-xs text-muted">The line we are following. Each line is one permitted value: a number, its words, and the dates it applies.</p>
       <Sheet kind="The export" title={FILE_NAME} meta={`${ROWS.length} lines`}>
         <div ref={scroller} className="max-h-96 overflow-auto">
           <table className="w-full min-w-max border-collapse text-left font-mono text-sm">
@@ -507,7 +530,7 @@ function SplitStage({
 }) {
   return (
     <section>
-      <Point>Cut the file by type. Each type becomes one mapping file: a number, and its words.</Point>
+      <Point>Data engineering cuts the file by type. Each type becomes its own small mapping file: a number, and its words.</Point>
       <p className="mt-4 mb-4 font-mono text-sm text-ink-soft">
         1 file → {DOMAINS.length} lists
       </p>
@@ -583,7 +606,7 @@ function SplitStage({
         </p>
       ) : (
         <p className="mt-4 text-base leading-relaxed text-ink-soft">
-          One name has a stray space. Open State or territory.
+          Tip: choose State or territory to see one name that needed tidying.
         </p>
       )}
     </section>
@@ -611,6 +634,7 @@ function LoadStage({
   const tableBox = useRef<HTMLDivElement>(null);
   const listRow = useRef<HTMLTableRowElement>(null);
   const tableRow = useRef<HTMLTableRowElement>(null);
+  const sqlBox = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     const pairs: [HTMLDivElement | null, HTMLTableRowElement | null][] = [
@@ -622,14 +646,19 @@ function LoadStage({
       const boxRect = box.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
       if (rowRect.top < boxRect.top || rowRect.bottom > boxRect.bottom) {
-        box.scrollTop += rowRect.top - boxRect.top - boxRect.height / 3;
+        box.scrollTo({
+          top: box.scrollTop + rowRect.top - boxRect.top - boxRect.height / 3,
+          behavior: "smooth",
+        });
       }
     }
+    const sql = sqlBox.current;
+    if (sql) sql.scrollTo({ top: sql.scrollHeight, behavior: "smooth" });
   }, [loaded]);
 
   return (
     <section>
-      <Point>Use the mapping file to add the words to a lookup table. The record is not touched yet.</Point>
+      <Point>Engineering adds the words from the mapping file to a lookup table: a small reference list the database keeps. No person records are touched yet.</Point>
       <div className="mt-4 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-mono text-sm text-ink">
           {loaded} of {all.length}
@@ -644,14 +673,18 @@ function LoadStage({
           {done ? "Play it again" : loaded > 0 ? "Keep going" : "Add the words"}
         </button>
       </div>
-      {justAdded ? (
-        <p className="mb-4 border-l-4 border-l-copper bg-copper-soft px-4 py-3 font-mono text-2xl leading-tight">
-          {justAdded.code} {justAdded.description}
-        </p>
-      ) : null}
+      <div className="mb-4 min-h-[4.25rem] border-l-4 border-l-copper bg-copper-soft px-4 py-3 font-mono text-2xl leading-tight">
+        {justAdded ? (
+          <span key={justAdded.code} className="slide-right block">
+            {justAdded.code} {justAdded.description}
+          </span>
+        ) : (
+          <span className="text-base text-muted">Press “Add the words” to watch them arrive.</span>
+        )}
+      </div>
       <div className="grid gap-3 lg:grid-cols-2">
         <Sheet kind="Mapping file" title={domain.mapFile} meta="the list">
-          <div ref={listBox} className="max-h-72 overflow-auto">
+          <div ref={listBox} className="h-72 overflow-auto">
             <table className="w-full border-collapse text-left font-mono text-sm">
               <thead className="sticky top-0 bg-paper-2 text-ink-soft">
                 <tr className="border-b border-line">
@@ -673,13 +706,14 @@ function LoadStage({
                       key={row.code}
                       ref={fresh ? listRow : undefined}
                       className={
-                        fresh
+                        "transition-colors duration-500 " +
+                        (fresh
                           ? "bg-copper-soft"
                           : hot
                             ? "bg-ink text-paper"
                             : moved
                               ? "border-b border-line text-muted"
-                              : "border-b border-line"
+                              : "border-b border-line")
                       }
                     >
                       <td className="px-3 py-2">{row.code}</td>
@@ -691,52 +725,58 @@ function LoadStage({
             </table>
           </div>
         </Sheet>
-        <Sheet kind="Lookup table" title={domain.refTable} meta={done ? "ready" : "empty until loaded"}>
-          {visible.length === 0 ? (
-            <p className="px-4 py-8 text-base leading-relaxed text-ink-soft">
-              Empty. The words are still only in the list.
-            </p>
-          ) : (
-            <div ref={tableBox} className="max-h-72 overflow-auto">
-              <table className="w-full border-collapse text-left font-mono text-sm">
-                <thead className="sticky top-0 bg-paper-2 text-ink-soft">
-                  <tr className="border-b border-line">
-                    <th className="w-1 p-0" />
-                    <th className="px-3 py-2 font-medium" scope="col">
-                      code
-                    </th>
-                    <th className="px-3 py-2 font-medium" scope="col">
-                      description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((row, index) => {
-                    const fresh = index === visible.length - 1;
-                    const marked = fresh || (done && row.code === trace.code);
-                    return (
-                      <tr
-                        key={row.code}
-                        ref={fresh ? tableRow : undefined}
-                        className={marked ? "bg-ink text-paper" : "border-b border-line"}
-                      >
-                        <td className={marked ? "w-1 bg-copper p-0" : "w-1 p-0"} />
-                        <td className="px-3 py-2">{row.code}</td>
-                        <td className="px-3 py-2 whitespace-normal">{row.description}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <Sheet kind="Lookup table" title={domain.refTable} meta={done ? "ready" : loaded > 0 ? "filling up" : "empty until loaded"}>
+          <div ref={tableBox} className="h-72 overflow-auto">
+            <table className="w-full border-collapse text-left font-mono text-sm">
+              <thead className="sticky top-0 bg-paper-2 text-ink-soft">
+                <tr className="border-b border-line">
+                  <th className="w-1 p-0" />
+                  <th className="px-3 py-2 font-medium" scope="col">
+                    code
+                  </th>
+                  <th className="px-3 py-2 font-medium" scope="col">
+                    description
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((row, index) => {
+                  const fresh = index === visible.length - 1;
+                  const marked = fresh || (done && row.code === trace.code);
+                  return (
+                    <tr
+                      key={row.code}
+                      ref={fresh ? tableRow : undefined}
+                      className={
+                        "row-slide transition-colors duration-500 " +
+                        (marked ? "bg-ink text-paper" : "border-b border-line")
+                      }
+                    >
+                      <td className={marked ? "w-1 bg-copper p-0" : "w-1 p-0"} />
+                      <td className="px-3 py-2">{row.code}</td>
+                      <td className="px-3 py-2 whitespace-normal">
+                        <span className="slide-right slide-right-late inline-block">
+                          {row.description}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {visible.length === 0 ? (
+              <p className="px-4 py-6 text-base leading-relaxed text-ink-soft">
+                Empty. The words are still only in the list.
+              </p>
+            ) : null}
+          </div>
         </Sheet>
       </div>
       <div className="mt-3">
-        <SqlBlock>{insertSql(domain, visible)}</SqlBlock>
+        <SqlBlock sqlRef={sqlBox} className="h-64">{insertSql(domain, visible)}</SqlBlock>
       </div>
       <p className="mt-3 text-base text-ink-soft">
-        The dates come with the words. 1600 and 9999 mean always. The edit time stays in the file.
+        The dates you set come with the words. 1600 to 9999 means always. The last-edited time stays behind in the file.
       </p>
     </section>
   );
@@ -755,14 +795,14 @@ function StoreStage({
 }) {
   return (
     <section>
-      <Point>The record keeps the number, not the sentence. Change the words once, in the list.</Point>
+      <Point>A person's record keeps only the number, not the words. If the wording changes, it is changed once, in the list.</Point>
       <div className="mt-5 grid gap-4 lg:grid-cols-5">
         <div className="border border-line bg-paper-2 p-4 lg:col-span-2">
           <p className="font-mono text-xs text-muted">Stored</p>
           <p className="mt-3 font-mono text-sm break-all">{domain.column}</p>
           <p className="mt-2 font-mono text-5xl leading-none">{trace.code}</p>
           <p className="mt-4 text-base leading-relaxed text-ink-soft">
-            “{trace.description}” is not saved here.
+            “{trace.description}” is not saved on the record.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3">
@@ -788,7 +828,7 @@ function StoreStage({
         <PersonTable recordId={recordId} active={domain} />
       </div>
       <p className="mt-3 text-base text-ink-soft">
-        Some teams also copy the words onto the record. The number is still the real value.
+        Some teams also copy the words onto the record for convenience. The number is still the real value.
       </p>
     </section>
   );
@@ -847,7 +887,7 @@ function ReadStage({
 
   return (
     <section>
-      <Point>Match the stored number to the lookup. That match brings the words back.</Point>
+      <Point>The screens you use match the stored number to the lookup. That match brings the words back.</Point>
       <RecordPicker recordId={record.id} onSelectRecord={onSelectRecord} />
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
         <div className="border border-line bg-paper-2 p-4">
@@ -904,8 +944,12 @@ function ReadStage({
         <SqlBlock>{joinSql(record)}</SqlBlock>
       </div>
       <p className="mt-3 text-base text-ink-soft">
-        The match for this code is a join to {domain.refTable}. 9999 means these words are still
-        current.
+        Behind the scenes this match is called a join, here to {domain.refTable}. An end date of
+        9999 means the words are still current.
+      </p>
+      <p className="mt-3 border-l-4 border-l-copper bg-copper-soft px-4 py-3 text-base leading-relaxed">
+        So the database holds numbers, and the words you see come from your code list. The dates
+        and permitted values you set decide which words appear.
       </p>
     </section>
   );
