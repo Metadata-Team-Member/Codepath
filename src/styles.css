@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+
+  --color-paper: #efe8dc;
+  --color-paper-2: #f7f3ea;
+  --color-ink: #1c1915;
+  --color-ink-soft: #3f382f;
+  --color-muted: #5e564c;
+  --color-line: #d4cbbd;
+  --color-copper: #c4622d;
+  --color-copper-soft: #f6e4d6;
+  --color-db-muted: #cbbfae;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    line-height: 1.5;
+  }
+}
+
+@keyframes stage-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage-in {
+  animation: stage-rise 280ms ease;
+}
+
+@keyframes wipe-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateX(-0.75rem);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wipe-in {
+  display: inline-block;
+  max-width: 100%;
+  animation: wipe-in 1.5s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+}
+
+.wipe-slow {
+  animation-duration: 2.4s;
+}
+
+@keyframes row-arrive {
+  0%,
+  20% {
+    background-color: var(--color-copper-soft);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.row-arrive {
+  animation: row-arrive 1.6s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-in,
+  .wipe-in,
+  .row-arrive {
+    animation: none;
+  }
+}
