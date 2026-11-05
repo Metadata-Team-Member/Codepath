@@ -18,3 +18,14 @@ Then open http://localhost:8080. No database and no sign-in. Leave the terminal 
 ## VS Code
 
 Clone this repo, check out the `codepath` branch, open the folder, then run the two commands above in the terminal.
+
+## Open it without installing anything
+
+Live page: https://metadata-team-member.github.io/Codepath/
+
+To rebuild that static page (built from `static/`, base path `/Codepath/`):
+
+```bash
+npm install
+npm run build:static   # writes dist-static/, published to the gh-pages branch
+```
