@@ -39,6 +39,21 @@ function useReducedMotion() {
   return reduced;
 }
 
+/** Scroll a table box so `row` sits clear of the sticky header and inside the view. */
+function keepInView(box: HTMLElement, row: HTMLElement, behavior: ScrollBehavior) {
+  const header = box.querySelector("thead")?.getBoundingClientRect().height ?? 0;
+  const boxRect = box.getBoundingClientRect();
+  const rowRect = row.getBoundingClientRect();
+  const margin = 8;
+  if (rowRect.top < boxRect.top + header + margin || rowRect.bottom > boxRect.bottom - margin) {
+    const room = boxRect.height - header;
+    box.scrollTo({
+      top: box.scrollTop + rowRect.top - boxRect.top - header - room / 3,
+      behavior,
+    });
+  }
+}
+
 function quote(value: string) {
   return `'${value.replaceAll("'", "''")}'`;
 }
@@ -208,9 +223,9 @@ export function Studio() {
   ];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto max-w-[90rem] px-4 py-8 sm:px-6 sm:py-12">
       <header className="max-w-3xl">
-        <p className="font-mono text-sm text-muted">Codepath</p>
+        <p className="font-ui text-sm text-muted">Codepath</p>
         <h1 className="mt-2 text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
           From a number to its words
         </h1>
@@ -227,9 +242,9 @@ export function Studio() {
 
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <label className="block min-w-0 sm:max-w-xl sm:flex-1">
-          <span className="font-mono text-sm text-muted">Follow one code</span>
+          <span className="font-ui text-sm text-muted">Follow one code</span>
           <select
-            className="mt-1 min-h-11 w-full border border-line bg-paper-2 px-3 font-mono text-sm"
+            className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card shadow-soft px-3 font-ui text-sm"
             value={`${traceType}|${traceCode}`}
             onChange={(event) => {
               const [codeType, code] = event.target.value.split("|");
@@ -250,7 +265,7 @@ export function Studio() {
         <div className="flex gap-2">
           <button
             type="button"
-            className="inline-flex min-h-11 items-center bg-ink px-4 font-mono text-sm text-paper"
+            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-ui text-sm font-medium text-white shadow-soft hover:bg-accent-deep"
             onClick={() => setPlaying((value) => !value)}
             aria-pressed={playing}
           >
@@ -258,7 +273,7 @@ export function Studio() {
           </button>
           <button
             type="button"
-            className="inline-flex min-h-11 items-center border border-line bg-paper-2 px-4 font-mono text-sm"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card shadow-soft px-4 font-ui text-sm"
             onClick={reset}
           >
             Restart
@@ -280,16 +295,16 @@ export function Studio() {
               aria-current={current ? "step" : undefined}
               onClick={() => goTo(index)}
               className={
-                "w-56 shrink-0 border px-3 py-3 text-left lg:w-auto " +
+                "w-56 shrink-0 rounded-lg border px-3 py-3 text-left shadow-soft lg:w-auto " +
                 (current
-                  ? "border-line border-t-4 border-t-copper bg-copper-soft"
-                  : "border-line bg-paper-2")
+                  ? "border-copper/40 bg-copper-soft"
+                  : "border-line bg-card")
               }
             >
-              <span className="font-mono text-xs text-muted">
+              <span className="font-ui text-xs text-muted">
                 {index + 1} {station.title}
               </span>
-              <span className="mt-1 line-clamp-2 block font-mono text-sm leading-snug">
+              <span className="mt-1 line-clamp-2 block font-ui text-sm leading-snug">
                 {station.value}
               </span>
             </button>
@@ -342,7 +357,7 @@ export function Studio() {
       <div className="mt-6 flex items-center justify-between gap-3">
         <button
           type="button"
-          className="inline-flex min-h-11 items-center border border-line bg-paper-2 px-4 font-mono text-sm disabled:opacity-40"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card shadow-soft px-4 font-ui text-sm disabled:opacity-40"
           onClick={() => goTo(step - 1)}
           disabled={step === 0}
         >
@@ -350,7 +365,7 @@ export function Studio() {
         </button>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center bg-ink px-4 font-mono text-sm text-paper"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-ui text-sm font-medium text-white shadow-soft hover:bg-accent-deep"
           onClick={() => {
             if (step >= STEPS.length - 1) reset();
             else goTo(step + 1);
@@ -360,11 +375,20 @@ export function Studio() {
         </button>
       </div>
 
-      <p className="mt-10 max-w-2xl font-mono text-xs leading-relaxed text-muted">
+      <p className="mt-10 max-w-2xl font-ui text-xs leading-relaxed text-muted">
         {ROWS.length} lines in one file, split into {DOMAINS.length} lists. The sample records
         (Record 1042 and so on) are made-up examples, not real people.
       </p>
     </main>
+  );
+}
+
+function Cols({ side, children }: { side: ReactNode; children: ReactNode }) {
+  return (
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start">
+      <div className="min-w-0">{children}</div>
+      <aside className="min-w-0 xl:sticky xl:top-4">{side}</aside>
+    </section>
   );
 }
 
@@ -389,13 +413,13 @@ function Sheet({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden border border-line bg-paper-2">
-      <header className="flex items-start justify-between gap-3 bg-ink px-4 py-3 text-paper">
+    <section className="overflow-hidden rounded-xl border border-line bg-card shadow-soft">
+      <header className="flex items-start justify-between gap-3 border-b border-line bg-sheet px-4 py-3 text-ink">
         <div className="min-w-0">
-          <p className="font-mono text-xs text-db-muted">{kind}</p>
+          <p className="font-ui text-xs text-muted">{kind}</p>
           <h3 className="truncate font-mono text-sm">{title}</h3>
         </div>
-        {meta ? <p className="shrink-0 font-mono text-xs text-db-muted">{meta}</p> : null}
+        {meta ? <p className="shrink-0 font-ui text-xs text-muted">{meta}</p> : null}
       </header>
       {children}
     </section>
@@ -413,13 +437,13 @@ function SqlBlock({
 }) {
   return (
     <>
-      <p className="mb-1 font-mono text-xs text-muted">
+      <p className="mb-2 text-sm text-muted">
         The code behind this step, for the curious. You do not need to read it.
       </p>
       <pre
         ref={sqlRef}
         className={
-          "overflow-auto bg-ink p-4 font-mono text-sm leading-relaxed text-paper " + className
+          "max-h-[calc(100vh-7rem)] overflow-auto rounded-xl bg-code p-4 font-mono text-[13px] leading-relaxed text-code-ink shadow-soft " + className
         }
       >
         {children}
@@ -444,22 +468,18 @@ function ExportStage({ trace }: { trace: Row }) {
     const box = scroller.current;
     const row = marked.current;
     if (!box || !row) return;
-    const boxRect = box.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    if (rowRect.top < boxRect.top || rowRect.bottom > boxRect.bottom) {
-      box.scrollTop += rowRect.top - boxRect.top - boxRect.height / 2 + rowRect.height / 2;
-    }
+    keepInView(box, row, "auto");
   }, [trace.codeType, trace.code]);
 
   return (
     <section>
       <Point>This is your code list: one file with every type of code mixed in together.</Point>
       <p className="mt-4 overflow-x-auto font-mono text-sm text-ink-soft">{csvLine(trace)}</p>
-      <p className="mt-1 mb-4 font-mono text-xs text-muted">The line we are following. Each line is one permitted value: a number, its words, and the dates it applies.</p>
+      <p className="mt-1 mb-4 font-ui text-xs text-muted">The line we are following. Each line is one permitted value: a number, its words, and the dates it applies.</p>
       <Sheet kind="The export" title={FILE_NAME} meta={`${ROWS.length} lines`}>
         <div ref={scroller} className="max-h-96 overflow-auto">
-          <table className="w-full min-w-max border-collapse text-left font-mono text-sm">
-            <thead className="sticky top-0 bg-paper-2">
+          <table className="w-full min-w-max soft-table text-left font-ui text-sm">
+            <thead>
               <tr className="border-b border-line text-ink-soft">
                 <th className="w-1 p-0" />
                 <th className="px-3 py-2 font-medium" scope="col">
@@ -489,7 +509,7 @@ function ExportStage({ trace }: { trace: Row }) {
                   <tr
                     key={`${row.codeType}-${row.code}`}
                     ref={hot ? marked : undefined}
-                    className={hot ? "bg-ink text-paper" : "border-b border-line"}
+                    className={hot ? "bg-hl font-medium" : ""}
                   >
                     <td className={hot ? "w-1 bg-copper p-0" : "w-1 p-0"} />
                     <td className="px-3 py-2 whitespace-nowrap">{row.codeType}</td>
@@ -510,7 +530,7 @@ function ExportStage({ trace }: { trace: Row }) {
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         {COLUMN_JOBS.map((job) => (
           <div key={job.term} className="border-t border-line pt-3">
-            <dt className="font-mono text-sm">{job.term}</dt>
+            <dt className="font-ui text-sm">{job.term}</dt>
             <dd className="mt-1 text-base leading-relaxed text-ink-soft">{job.def}</dd>
           </div>
         ))}
@@ -531,7 +551,7 @@ function SplitStage({
   return (
     <section>
       <Point>Data engineering cuts the file by type. Each type becomes its own small mapping file: a number, and its words.</Point>
-      <p className="mt-4 mb-4 font-mono text-sm text-ink-soft">
+      <p className="mt-4 mb-4 font-ui text-sm text-ink-soft">
         1 file → {DOMAINS.length} lists
       </p>
       <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -546,13 +566,13 @@ function SplitStage({
                 onClick={() => onSelect(item.codeType)}
                 className={
                   "min-h-11 w-full border px-3 py-3 text-left " +
-                  (on ? "border-ink bg-ink text-paper" : "border-line bg-paper-2")
+                  (on ? "border-accent bg-accent text-white" : "border-line bg-card")
                 }
               >
-                <span className={"font-mono text-xs " + (on ? "text-db-muted" : "text-muted")}>
+                <span className={"font-ui text-xs " + (on ? "text-white/85" : "text-muted")}>
                   {count} codes
                 </span>
-                <span className="mt-1 block font-mono text-sm break-all">{item.mapFile}</span>
+                <span className="mt-1 block font-mono text-xs break-all">{item.mapFile}</span>
                 <span className="mt-1 block text-base">{item.label}</span>
               </button>
             </li>
@@ -566,8 +586,8 @@ function SplitStage({
           meta={`${rowsOf(domain.codeType).length} lines`}
         >
           <div className="max-h-80 overflow-auto">
-            <table className="w-full border-collapse text-left font-mono text-sm">
-              <thead className="sticky top-0 bg-paper-2 text-ink-soft">
+            <table className="w-full soft-table text-left font-ui text-sm">
+              <thead className="text-ink-soft">
                 <tr className="border-b border-line">
                   <th className="w-1 p-0" />
                   <th className="px-3 py-2 font-medium" scope="col">
@@ -585,7 +605,7 @@ function SplitStage({
                 {rowsOf(domain.codeType).map((row) => {
                   const hot = row.code === trace.code;
                   return (
-                    <tr key={row.code} className={hot ? "bg-ink text-paper" : "border-b border-line"}>
+                    <tr key={row.code} className={hot ? "bg-hl font-medium" : ""}>
                       <td className={hot ? "w-1 bg-copper p-0" : "w-1 p-0"} />
                       <td className="px-3 py-2">{row.code}</td>
                       <td className="px-3 py-2 whitespace-normal">{row.description}</td>
@@ -642,38 +662,30 @@ function LoadStage({
       [tableBox.current, tableRow.current],
     ];
     for (const [box, row] of pairs) {
-      if (!box || !row) continue;
-      const boxRect = box.getBoundingClientRect();
-      const rowRect = row.getBoundingClientRect();
-      if (rowRect.top < boxRect.top || rowRect.bottom > boxRect.bottom) {
-        box.scrollTo({
-          top: box.scrollTop + rowRect.top - boxRect.top - boxRect.height / 3,
-          behavior: "smooth",
-        });
-      }
+      if (box && row) keepInView(box, row, "smooth");
     }
     const sql = sqlBox.current;
     if (sql) sql.scrollTo({ top: sql.scrollHeight, behavior: "smooth" });
   }, [loaded]);
 
   return (
-    <section>
+    <Cols side={<SqlBlock sqlRef={sqlBox} className="h-[26rem]">{insertSql(domain, visible)}</SqlBlock>}>
       <Point>Engineering adds the words from the mapping file to a lookup table: a small reference list the database keeps. No person records are touched yet.</Point>
       <div className="mt-4 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="font-mono text-sm text-ink">
+        <p className="font-ui text-sm text-ink">
           {loaded} of {all.length}
           {running ? " · watch each line" : ""}
         </p>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center bg-ink px-4 font-mono text-sm text-paper disabled:opacity-50"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-ui text-sm font-medium text-white shadow-soft hover:bg-accent-deep disabled:opacity-50"
           onClick={onInsert}
           disabled={running}
         >
           {done ? "Play it again" : loaded > 0 ? "Keep going" : "Add the words"}
         </button>
       </div>
-      <div className="mb-4 min-h-[4.25rem] border-l-4 border-l-copper bg-copper-soft px-4 py-3 font-mono text-2xl leading-tight">
+      <div className="mb-4 min-h-[4.25rem] border-l-4 border-l-copper bg-copper-soft px-4 py-3 font-ui text-2xl leading-tight">
         {justAdded ? (
           <span key={justAdded.code} className="slide-right block">
             {justAdded.code} {justAdded.description}
@@ -685,8 +697,8 @@ function LoadStage({
       <div className="grid gap-3 lg:grid-cols-2">
         <Sheet kind="Mapping file" title={domain.mapFile} meta="the list">
           <div ref={listBox} className="h-72 overflow-auto">
-            <table className="w-full border-collapse text-left font-mono text-sm">
-              <thead className="sticky top-0 bg-paper-2 text-ink-soft">
+            <table className="w-full soft-table text-left font-ui text-sm">
+              <thead className="text-ink-soft">
                 <tr className="border-b border-line">
                   <th className="px-3 py-2 font-medium" scope="col">
                     CODE
@@ -710,7 +722,7 @@ function LoadStage({
                         (fresh
                           ? "bg-copper-soft"
                           : hot
-                            ? "bg-ink text-paper"
+                            ? "bg-hl font-medium"
                             : moved
                               ? "border-b border-line text-muted"
                               : "border-b border-line")
@@ -727,8 +739,8 @@ function LoadStage({
         </Sheet>
         <Sheet kind="Lookup table" title={domain.refTable} meta={done ? "ready" : loaded > 0 ? "filling up" : "empty until loaded"}>
           <div ref={tableBox} className="h-72 overflow-auto">
-            <table className="w-full border-collapse text-left font-mono text-sm">
-              <thead className="sticky top-0 bg-paper-2 text-ink-soft">
+            <table className="w-full soft-table text-left font-ui text-sm">
+              <thead className="text-ink-soft">
                 <tr className="border-b border-line">
                   <th className="w-1 p-0" />
                   <th className="px-3 py-2 font-medium" scope="col">
@@ -749,7 +761,7 @@ function LoadStage({
                       ref={fresh ? tableRow : undefined}
                       className={
                         "row-slide transition-colors duration-500 " +
-                        (marked ? "bg-ink text-paper" : "border-b border-line")
+                        (marked ? "bg-hl font-medium" : "")
                       }
                     >
                       <td className={marked ? "w-1 bg-copper p-0" : "w-1 p-0"} />
@@ -772,13 +784,10 @@ function LoadStage({
           </div>
         </Sheet>
       </div>
-      <div className="mt-3">
-        <SqlBlock sqlRef={sqlBox} className="h-64">{insertSql(domain, visible)}</SqlBlock>
-      </div>
       <p className="mt-3 text-base text-ink-soft">
         The dates you set come with the words. 1600 to 9999 means always. The last-edited time stays behind in the file.
       </p>
-    </section>
+    </Cols>
   );
 }
 
@@ -794,34 +803,31 @@ function StoreStage({
   onSelectRecord: (id: string) => void;
 }) {
   return (
-    <section>
+    <Cols side={<SqlBlock>{createPersonSql()}</SqlBlock>}>
       <Point>A person's record keeps only the number, not the words. If the wording changes, it is changed once, in the list.</Point>
-      <div className="mt-5 grid gap-4 lg:grid-cols-5">
-        <div className="border border-line bg-paper-2 p-4 lg:col-span-2">
-          <p className="font-mono text-xs text-muted">Stored</p>
+      <div className="mt-5 grid gap-4">
+        <div className="rounded-lg border border-line bg-card shadow-soft p-4">
+          <p className="font-ui text-xs text-muted">Stored</p>
           <p className="mt-3 font-mono text-sm break-all">{domain.column}</p>
-          <p className="mt-2 font-mono text-5xl leading-none">{trace.code}</p>
+          <p className="mt-2 font-ui text-5xl leading-none">{trace.code}</p>
           <p className="mt-4 text-base leading-relaxed text-ink-soft">
             “{trace.description}” is not saved on the record.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3">
-          <div className="border border-line p-4">
-            <h3 className="font-mono text-sm">Words on every row</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-line bg-paper p-4">
+            <h3 className="font-ui text-sm">Words on every row</h3>
             <p className="mt-2 leading-relaxed text-ink-soft">
               A new wording for “{trace.description}” means editing every record that stores {trace.code}.
             </p>
           </div>
-          <div className="border border-ink bg-ink p-4 text-paper">
-            <h3 className="font-mono text-sm">Number on the row</h3>
-            <p className="mt-2 leading-relaxed text-db-muted">
-              Update {domain.mapFile} once. The record still stores {trace.code}.
+          <div className="rounded-lg border border-accent/30 bg-accent-soft p-4">
+            <h3 className="font-ui text-sm">Number on the row</h3>
+            <p className="mt-2 leading-relaxed text-ink-soft">
+              Update <span className="break-all">{domain.mapFile}</span> once. The record still stores {trace.code}.
             </p>
           </div>
         </div>
-      </div>
-      <div className="mt-4">
-        <SqlBlock>{createPersonSql()}</SqlBlock>
       </div>
       <RecordPicker recordId={recordId} onSelectRecord={onSelectRecord} />
       <div className="mt-3">
@@ -830,7 +836,7 @@ function StoreStage({
       <p className="mt-3 text-base text-ink-soft">
         Some teams also copy the words onto the record for convenience. The number is still the real value.
       </p>
-    </section>
+    </Cols>
   );
 }
 
@@ -886,17 +892,17 @@ function ReadStage({
   }, [resolved, record.id]);
 
   return (
-    <section>
+    <Cols side={<SqlBlock>{joinSql(record)}</SqlBlock>}>
       <Point>The screens you use match the stored number to the lookup. That match brings the words back.</Point>
       <RecordPicker recordId={record.id} onSelectRecord={onSelectRecord} />
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <div className="border border-line bg-paper-2 p-4">
-          <p className="font-mono text-xs text-muted">On record {record.id}</p>
+        <div className="rounded-lg border border-line bg-card shadow-soft p-4">
+          <p className="font-ui text-xs text-muted">On record {record.id}</p>
           <p className="mt-3 font-mono text-sm break-all">{domain.column}</p>
-          <p className="mt-2 font-mono text-5xl leading-none">{record[domain.column]}</p>
+          <p className="mt-2 font-ui text-5xl leading-none">{record[domain.column]}</p>
         </div>
-        <div className={"border p-4 " + (resolved ? "border-ink bg-ink text-paper" : "border-line bg-paper-2")}>
-          <p className={"font-mono text-xs " + (resolved ? "text-db-muted" : "text-muted")}>
+        <div className={"rounded-lg border p-4 " + (resolved ? "border-accent/30 bg-accent-soft" : "border-line bg-card shadow-soft")}>
+          <p className={"font-ui text-xs " + (resolved ? "text-ink-soft" : "text-muted")}>
             {resolved ? "From the lookup" : "Words hidden"}
           </p>
           <p className="mt-3 text-3xl leading-tight font-semibold break-words">
@@ -914,13 +920,13 @@ function ReadStage({
           {!resolved ? (
             <button
               type="button"
-              className="mt-4 inline-flex min-h-11 items-center bg-ink px-4 font-mono text-sm text-paper"
+              className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-accent px-4 font-ui text-sm font-medium text-white shadow-soft hover:bg-accent-deep"
               onClick={onResolve}
             >
               Show the words
             </button>
           ) : (
-            <p className="mt-3 font-mono text-sm text-db-muted">
+            <p className="mt-3 font-ui text-sm text-ink-soft">
               <Wipe key={`${record.id}-via`} text={`via ${domain.mapFile}`} delay={700} />
             </p>
           )}
@@ -940,9 +946,6 @@ function ReadStage({
           />
         </p>
       ) : null}
-      <div className="mt-3">
-        <SqlBlock>{joinSql(record)}</SqlBlock>
-      </div>
       <p className="mt-3 text-base text-ink-soft">
         Behind the scenes this match is called a join, here to {domain.refTable}. An end date of
         9999 means the words are still current.
@@ -951,7 +954,7 @@ function ReadStage({
         So the database holds numbers, and the words you see come from your code list. The dates
         and permitted values you set decide which words appear.
       </p>
-    </section>
+    </Cols>
   );
 }
 
@@ -973,8 +976,8 @@ function RecordPicker({
             aria-pressed={on}
             onClick={() => onSelectRecord(item.id)}
             className={
-              "inline-flex min-h-11 items-center px-3 font-mono text-sm " +
-              (on ? "bg-ink text-paper" : "border border-line bg-paper-2")
+              "inline-flex min-h-11 items-center px-3 font-ui text-sm " +
+              (on ? "bg-accent text-white" : "border border-line bg-card")
             }
           >
             Record {item.id}
@@ -989,8 +992,8 @@ function PersonTable({ recordId, active }: { recordId: string; active: Domain })
   return (
     <Sheet kind="In the database" title="person" meta="numbers only">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-max border-collapse text-left font-mono text-sm">
-          <thead className="bg-paper-2 text-ink-soft">
+        <table className="w-full min-w-max soft-table text-left font-ui text-sm">
+          <thead className="text-ink-soft">
             <tr className="border-b border-line">
               <th className="px-3 py-2 font-medium" scope="col">
                 person_id
@@ -1006,7 +1009,7 @@ function PersonTable({ recordId, active }: { recordId: string; active: Domain })
             {RECORDS.map((item) => {
               const on = item.id === recordId;
               return (
-                <tr key={item.id} className={on ? "bg-ink text-paper" : "border-b border-line"}>
+                <tr key={item.id} className={on ? "bg-hl font-medium" : ""}>
                   <td className="px-3 py-2">{item.id}</td>
                   {DOMAINS.map((domain) => {
                     const hot = on && domain.column === active.column;
@@ -1060,8 +1063,8 @@ function PersonReadTable({
   return (
     <Sheet kind={resolved ? "Words filled in" : "Before the lookup"} title={`record ${record.id}`} meta="one row">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-max border-collapse text-left text-sm">
-          <thead className="bg-paper-2 font-mono text-ink-soft">
+        <table className="w-full soft-table text-left text-sm">
+          <thead className="font-ui text-ink-soft">
             <tr className="border-b border-line">
               <th className="px-3 py-2 font-medium" scope="col">
                 Field
@@ -1087,12 +1090,12 @@ function PersonReadTable({
                   key={`${record.id}-${item.column}`}
                   className={
                     hot
-                      ? "bg-ink text-paper"
-                      : "border-b border-line" + (arriving ? " row-arrive" : "")
+                      ? "bg-hl font-medium"
+                      : "" + (arriving ? " row-arrive" : "")
                   }
                 >
-                  <td className="px-3 py-2 font-mono text-sm whitespace-nowrap">{item.selectAs}</td>
-                  <td className="px-3 py-2 font-mono">{record[item.column]}</td>
+                  <td className="px-3 py-2 font-ui text-sm whitespace-nowrap">{item.selectAs}</td>
+                  <td className="px-3 py-2 font-ui">{record[item.column]}</td>
                   <td className="px-3 py-2">
                     {arrived ? (
                       <Wipe
@@ -1104,7 +1107,7 @@ function PersonReadTable({
                       "—"
                     )}
                   </td>
-                  <td className={"px-3 py-2 font-mono text-sm " + (hot ? "text-db-muted" : "text-muted")}>
+                  <td className={"px-3 py-2 font-mono text-xs break-all " + "text-muted"}>
                     {item.mapFile}
                   </td>
                 </tr>

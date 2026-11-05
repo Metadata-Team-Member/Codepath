@@ -2,17 +2,28 @@
 
 @theme {
   --font-sans: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-ui: "DM Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
 
-  --color-paper: #efe8dc;
-  --color-paper-2: #f7f3ea;
-  --color-ink: #1c1915;
-  --color-ink-soft: #3f382f;
-  --color-muted: #5e564c;
-  --color-line: #d4cbbd;
-  --color-copper: #c4622d;
-  --color-copper-soft: #f6e4d6;
+  --color-paper: #f4eee6;
+  --color-paper-2: #fffaf3;
+  --color-card: #fffaf3;
+  --color-sheet: #efe6d9;
+  --color-ink: #3b352f;
+  --color-ink-soft: #5b5248;
+  --color-muted: #6f655a;
+  --color-line: #e4dacb;
+  --color-copper: #c26a3d;
+  --color-copper-soft: #f9e9dc;
+  --color-accent: #a9552f;
+  --color-accent-deep: #8f4524;
+  --color-accent-soft: #f9e9dc;
+  --color-hl: #dcebe3;
+  --color-code: #3f3a35;
+  --color-code-ink: #f4ede2;
   --color-db-muted: #cbbfae;
+
+  --shadow-soft: 0 1px 2px rgb(80 60 40 / 0.06), 0 4px 14px rgb(80 60 40 / 0.06);
 }
 
 @layer base {
@@ -27,7 +38,7 @@
   }
 
   body {
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     background: var(--color-paper);
     color: var(--color-ink);
     line-height: 1.5;
@@ -127,4 +138,30 @@
   .row-arrive {
     animation: none;
   }
+}
+
+/* Tables: separate borders so sticky headers always sit clear of body rows. */
+.soft-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.soft-table th,
+.soft-table td {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.soft-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-sheet);
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.soft-table tbody tr:last-child td {
+  border-bottom: 0;
 }
